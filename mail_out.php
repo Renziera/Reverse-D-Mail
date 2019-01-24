@@ -5,6 +5,8 @@
      * and make sure SMTP plugin is active
      */
 
+    require_once '../wp-load.php';
+
     $servername = "localhost";
     $username = "renziera_dmail";
     $password = 'I6DpyEE*3s^4%qgc';
@@ -28,7 +30,18 @@
 
     foreach ($result as $dmail) {
         if($dmail['target_time'] <= $currentTime){
-            echo $dmail['subject'];
+            $sentTime = $dmail['sent_time'];
+            $sentTime = substr($sentTime, 8, 2) . ':00 ' . substr($sentTime, 6, 2) . '-' . substr($sentTime, 4, 2) . '-' . substr($sentTime, 0, 4);
+            $message = $dmail['message'];
+            $message = $message . '\n\n\n' . $dmail['sender'] . ' sent you this mail from ' . $sentTime . '.\nFor more information, see https://renziera.web.id/reverse-d-mail/';
+            $status = wp_mail($dmail['target'], $dmail['subject'], $message);
+            if($status){
+                $updateQuery = 'UPDATE dmail SET sent = 1 WHERE id = :id';
+                $query = $conn->prepare($updateQuery);
+                $query->bindParam(':id', $dmail['id']);
+                $query->execute();
+            }
         }
     }
+
 ?>
